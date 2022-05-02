@@ -1,0 +1,28 @@
+name: Coveralls 
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  coveralls:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Cloning repo
+      uses: actions/checkout@v2
+    - name: Use Node.js 16.x
+      uses: actions/setup-node@v2
+      with:
+        node-version: 16.x
+    - name: Installing dependencies
+      run: npm install
+    - name: Generating coverage information
+      run: npm run coveralls
+    - name: Coveralls GitHub Action
+      uses: coverallsapp/github-action@1.1.3
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}

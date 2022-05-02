@@ -6,7 +6,7 @@
   "scripts": {
     "test": "mocha",
     "coverage": "nyc npm test",
-    "coverall": "nyc npm test && nyc report --report=lcov",
+    "coverall": "nyc npm test && nyc report --reporter=lcov",
     "doc": "typedoc"
   },
   "keywords": [],
