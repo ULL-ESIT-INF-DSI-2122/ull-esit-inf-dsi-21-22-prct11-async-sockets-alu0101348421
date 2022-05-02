@@ -1,0 +1,8 @@
+node_modules
+dist
+.vscode
+.nyc_output
+notes.md
+scripts.md
+rules.md
+coverage
