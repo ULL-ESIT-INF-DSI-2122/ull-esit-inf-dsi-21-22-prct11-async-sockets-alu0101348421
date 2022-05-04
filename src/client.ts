@@ -1,41 +1,21 @@
-import * as yargs from 'yargs';
-import {Note, Color} from './note';
+import * as net from 'net';
 
-yargs
-    .command({
-      command: 'add',
-      describe: 'Add a new note',
-      builder: {
-        user: {
-          describe: 'User of the note',
-          demand: true,
-          alias: 'u',
-        },
-        title: {
-          describe: 'Title of the note',
-          demand: true,
-          alias: 't',
-        },
-        body: {
-          describe: 'Body of the note',
-          demand: true,
-          alias: 'b',
-        },
-        color: {
-          describe: 'Color of the note',
-          demand: true,
-          alias: 'c',
-          type: 'string',
-          choices: ['red', 'green', 'blue', 'yellow'],
-        },
-      },
-      handler: (argv) => {
-        const note = new Note(
-          argv.user as string,
-          argv.title as string,
-          argv.body as string,
-          argv.color as Color);
-        console.log(note);
-      },
-    })
-    .help;
+// const jsonGet = {type: 'get', user: 'test'};
+// const jsonAdd = {type: 'add', user: 'test',
+//   title: 'test', body: 'test', color: 'red'};
+const jsonRemove = {type: 'remove', user: 'test', title: 'test'};
+
+const client = net.connect({port: 3000}, () => {
+  client.write(JSON.stringify(jsonRemove));
+  client.on('data', (data) => {
+    const message = JSON.parse(data.toString());
+    if (message.type === 'note') {
+      console.log(message.note.title);
+    } else if (message.type === 'msg') {
+      console.log(message.data);
+    }
+  });
+  client.on('end', () => {
+    console.log('client disconnected');
+  });
+});

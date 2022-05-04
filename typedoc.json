@@ -1,6 +1,6 @@
 {
   "entryPoints": [
-    "src"
+    "mod"
   ],
   "out": "./docs"
 }
