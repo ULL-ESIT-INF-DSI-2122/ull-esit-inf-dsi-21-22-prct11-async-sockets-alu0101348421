@@ -132,7 +132,7 @@ export class Server {
               callback({
                 type: 'add',
                 success: false,
-                error: 'Error adding note'});
+                error: err.message});
             } else {
               callback({
                 type: 'add',
