@@ -120,9 +120,28 @@ export class Server {
       return;
     }
     if (!fs.existsSync(`${this.dbDir}/${request.user}`)) {
-      fs.mkdirSync(`${this.dbDir}/${request.user}`);
-    }
-    if (fs.existsSync(`${this.dbDir}/${request.user}/${request.title}.json`)) {
+      fs.mkdir(`${this.dbDir}/${request.user}`, (err) => {
+        if (err) {
+          callback({
+            type: 'add',
+            success: false,
+            error: 'Error creating user'});
+        } else {
+          fs.writeFile(`${this.dbDir}/${request.user}/${request.title}.json`, JSON.stringify(note), (err) => {
+            if (err) {
+              callback({
+                type: 'add',
+                success: false,
+                error: 'Error adding note'});
+            } else {
+              callback({
+                type: 'add',
+                success: true});
+            }
+          });
+        }
+      });
+    } else if (fs.existsSync(`${this.dbDir}/${request.user}/${request.title}.json`)) {
       callback({
         type: 'add',
         success: false,
@@ -137,8 +156,7 @@ export class Server {
         } else {
           callback({
             type: 'add',
-            success: true,
-            notes: [note]});
+            success: true});
         }
       });
     }
