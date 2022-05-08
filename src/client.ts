@@ -35,7 +35,7 @@ export class Client {
   /**
    * Método que cierra el socket del cliente.
    */
-  public close() {
+  public stop() {
     if (this.socket) {
       this.socket.end();
     }
