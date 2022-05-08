@@ -1,6 +1,11 @@
 {
   "entryPoints": [
-    "mod"
+    "./src/client.ts",
+    "./src/clientArg.ts",
+    "./src/server.ts",
+    "./src/serverArg.ts",
+    "./src/note.ts",
+    "./src/types.ts"
   ],
   "out": "./docs"
 }
