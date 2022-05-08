@@ -90,8 +90,6 @@ export class Client {
           callback(null);
         } else if (response.type === 'add' && !response.success && response.error) {
           callback(new Error(response.error));
-        } else if (response.type === 'add' && !response.success) {
-          callback(new Error('Note not added'));
         } else {
           callback(new Error(this.UNKNOWN_RESPONSE));
         }
@@ -120,8 +118,6 @@ export class Client {
           callback(null);
         } else if (response.type === 'update' && !response.success && response.error) {
           callback(new Error(response.error));
-        } else if (response.type === 'update' && !response.success) {
-          callback(new Error('Note not updated'));
         } else {
           callback(new Error(this.UNKNOWN_RESPONSE));
         }
@@ -149,8 +145,6 @@ export class Client {
           callback(null);
         } else if (response.type === 'remove' && !response.success && response.error) {
           callback(new Error(response.error));
-        } else if (response.type === 'remove' && !response.success) {
-          callback(new Error('Note not removed'));
         } else {
           callback(new Error(this.UNKNOWN_RESPONSE));
         }
@@ -181,8 +175,6 @@ export class Client {
           }
         } else if (response.type === 'read' && !response.success && response.error) {
           callback(new Error(response.error), null);
-        } else if (response.type === 'read' && !response.success) {
-          callback(new Error('Note not read'), null);
         } else {
           callback(new Error(this.UNKNOWN_RESPONSE), null);
         }
@@ -217,8 +209,6 @@ export class Client {
           }
         } else if (response.type === 'list' && !response.success && response.error) {
           callback(new Error(response.error), []);
-        } else if (response.type === 'list' && !response.success) {
-          callback(new Error('Unknown error'), []);
         } else {
           callback(new Error(this.UNKNOWN_RESPONSE), []);
         }

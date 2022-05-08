@@ -24,12 +24,11 @@ export class Server {
 
   /**
    * Constructor de la clase.
-   * @param {string} dbDir Directorio de la base de datos.
-   * @param {number} port Puerto del servidor.
+   * @param dbDir Directorio de la base de datos.
+   * @param port Puerto del servidor.
    */
   constructor(dbDir = './db', port = 3000) {
     if (!fs.existsSync(dbDir)) {
-      // PWD = process.cwd();
       const pwd = process.cwd();
       fs.mkdirSync(`${pwd}/db`);
       this.dbDir = `${pwd}/db`;

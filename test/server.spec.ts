@@ -18,6 +18,17 @@ describe('server & client', () => {
     sinon.restore();
   });
 
+  it('server should return an unknown response if the message is not valid', () => {
+    const client = new Client();
+    client.send('{}');
+    client.listen((response) => {
+      expect(response.type).to.equal('unknown');
+      expect(response.success).to.equal(false);
+      expect(response.error).to.equal('Unknown request');
+      client.stop();
+    });
+  });
+
   it('a client should be able to connect and disconnect', (done) => {
     const client = new Client();
     client.stop();
@@ -44,6 +55,23 @@ describe('server & client', () => {
         expect.fail();
       }
       expect(fs.existsSync('./db/testUser')).to.be.true;
+      done();
+    });
+  });
+
+  it('should not be able to add a note with invalid data', (done) => {
+    const client = new Client();
+    const requestMessage = {
+      type: 'add',
+      user: 'testUser',
+      title: 'testTitle',
+      body: 'testBody'};
+    client.send(JSON.stringify(requestMessage));
+    client.listen((response) => {
+      expect(response.type).to.equal('add');
+      expect(response.success).to.equal(false);
+      expect(response.error).to.equal('Missing parameters');
+      client.stop();
       done();
     });
   });
