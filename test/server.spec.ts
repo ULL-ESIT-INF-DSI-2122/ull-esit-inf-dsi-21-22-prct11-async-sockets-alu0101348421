@@ -12,7 +12,9 @@ describe('server & client', () => {
   before(() => {
     server = new Server();
     if (fs.existsSync('./db/testUser')) {
-      fs.rmSync('./db/testUser', {recursive: true});
+      fs.readdirSync('./db/testUser').forEach((file) => {
+        fs.unlinkSync(`./db/testUser/${file}`);
+      });
     }
     sinon.stub(console, 'log');
   });
