@@ -11,20 +11,10 @@ describe('server & client', () => {
   let server: Server;
   before(() => {
     server = new Server();
-    if (fs.existsSync('./db/testUser')) {
-      fs.readdirSync('./db/testUser').forEach((file) => {
-        fs.unlinkSync(`./db/testUser/${file}`);
-      });
-    }
     sinon.stub(console, 'log');
   });
   after(() => {
     server.stop();
-    if (fs.existsSync('./db/testUser')) {
-      fs.readdirSync('./db/testUser').forEach((file) => {
-        fs.unlinkSync(`./db/testUser/${file}`);
-      });
-    }
     sinon.restore();
   });
 
