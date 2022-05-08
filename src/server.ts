@@ -12,7 +12,7 @@ export class Server {
   /**
    * Directorio de la base de datos.
    */
-  private readonly dbDir: string;
+  private dbDir: string;
   /**
    * Servidor de notas.
    */
@@ -28,7 +28,14 @@ export class Server {
    * @param {number} port Puerto del servidor.
    */
   constructor(dbDir = './db', port = 3000) {
-    this.dbDir = dbDir;
+    if (!fs.existsSync(dbDir)) {
+      // PWD = process.cwd();
+      const pwd = process.cwd();
+      fs.mkdirSync(`${pwd}/db`);
+      this.dbDir = `${pwd}/db`;
+    } else {
+      this.dbDir = dbDir;
+    }
     this.server = net.createServer((socket) => {
       let msg = '';
       let open = 0;
