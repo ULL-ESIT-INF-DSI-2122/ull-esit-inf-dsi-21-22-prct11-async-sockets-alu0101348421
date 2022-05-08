@@ -120,19 +120,19 @@ export class Server {
       return;
     }
     if (!fs.existsSync(`${this.dbDir}/${request.user}`)) {
-      fs.mkdir(`${this.dbDir}/${request.user}`, (err) => {
-        if (err) {
+      fs.mkdir(`${this.dbDir}/${request.user}`, (mkdirErr) => {
+        if (mkdirErr) {
           callback({
             type: 'add',
             success: false,
-            error: 'Error creating user'});
+            error: mkdirErr.message});
         } else {
-          fs.writeFile(`${this.dbDir}/${request.user}/${request.title}.json`, JSON.stringify(note), (err) => {
-            if (err) {
+          fs.writeFile(`${this.dbDir}/${request.user}/${request.title}.json`, JSON.stringify(note), (writeErr) => {
+            if (writeErr) {
               callback({
                 type: 'add',
                 success: false,
-                error: err.message});
+                error: writeErr.message});
             } else {
               callback({
                 type: 'add',
