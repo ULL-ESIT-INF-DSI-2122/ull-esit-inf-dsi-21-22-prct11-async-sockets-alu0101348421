@@ -21,7 +21,9 @@ describe('server & client', () => {
   after(() => {
     server.stop();
     if (fs.existsSync('./db/testUser')) {
-      fs.rmSync('./db/testUser', {recursive: true});
+      fs.readdirSync('./db/testUser').forEach((file) => {
+        fs.unlinkSync(`./db/testUser/${file}`);
+      });
     }
     sinon.restore();
   });
