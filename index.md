@@ -338,5 +338,405 @@ Luego, para que imprimir la información de forma correcta, se utiliza el módul
 Para la clase encargada del lado del servidor, tendremos en el constructor el directorio que trataremos como base de datos y el puerto sobre el que vamos a trabajar.
 
 Dentro de este constructor, primero se comprueba que exista el directorio que se indica, y en caso contrario, se crea.
+
+Luego, se crea un socket en el puerto que se indica y se inicia la escucha por peticiones.
+
+Esta recepción de peticiones seguirá el mismo patrón que nombramos en el lado del cliente, y una vez se reciba un mensaje, se ejecutará un método que se encargará de manejarlo para después volver al constructor para enviar la respuesta.
+
+```typescript
+export class Server {
+  private readonly dbDir: string;
+  private readonly server: net.Server;
+
+  MISSING_PARAMETERS = 'Missing parameters';
+  NOTE_NOT_EXISTS = 'Note does not exist';
+  USER_NOT_EXISTS = 'User does not exist';
+
+  constructor(dbDir = './db', port = 3000) {
+    if (!fs.existsSync(dbDir)) {
+      if (dbDir[0] === '/') {
+        fs.mkdirSync(dbDir);
+        this.dbDir = dbDir;
+      } else {
+        const pwd = process.cwd();
+        fs.mkdirSync(`${pwd}/${dbDir}`);
+        this.dbDir = `${pwd}/${dbDir}`;
+      }
+    } else {
+      this.dbDir = dbDir;
+    }
+    this.server = net.createServer((socket) => {
+      let msg = '';
+      let open = 0;
+      let close = 0;
+      console.log(chalk.green('Client connected'));
+      socket.on('data', (data) => {
+        const len = msg.length;
+        msg += data.toString();
+        for (let i = len; i < msg.length; i++) {
+          if (msg[i] === '{') {
+            open++;
+          } else if (msg[i] === '}') {
+            close++;
+          }
+        }
+        if (open > 0 && open === close) {
+          const json = JSON.parse(msg);
+          msg = '';
+          open = 0;
+          close = 0;
+          console.log(chalk.green(`\tReceived: ${json.type}`));
+          this.handleRequest(json, socket, (response: ResponseMessage) => {
+            if (response.success) {
+              console.log(chalk.green(`\tAll right, sending response`));
+            } else {
+              console.log(chalk.red(`\tError: ${response.error}`));
+            }
+            socket.write(JSON.stringify(response));
+          });
+        }
+      });
+      socket.on('end', () => {
+        console.log(chalk.green('Client disconnected'));
+      });
+    });
+    this.server.listen(port, () => {
+      console.log(chalk.green(`Server listening on port ${port}`));
+    });
+  }
+  (...)
+}
+```
+Esta función de la que hablábamos que manejaría la petición que se recibe es, conceptualmente, un switch que devuelve la respuesta en un callback.
+```typescript
+  private handleRequest(request: RequestMessage, socket: net.Socket, callback: (response: ResponseMessage) => void) {
+    switch (request.type) {
+      case 'add':
+        this.addNote(request, callback);
+        break;
+      case 'update':
+        this.updateNote(request, callback);
+        break;
+      case 'remove':
+        this.removeNote(request, callback);
+        break;
+      case 'read':
+        this.readNote(request, callback);
+        break;
+      case 'list':
+        this.listNotes(request, callback);
+        break;
+      default:
+        callback({
+          type: 'unknown',
+          success: false,
+          error: 'Unknown request'});
+        break;
+    }
+  }
+```
+Luego, estas funciones a las que se llaman aquí serán las encargadas de manejar la petición específica y trabajar con los archivos de las notas, además de devolver la respuesta adecuada o un error en caso de que algo falle.
+- **addNote**: añade una nota a la base de datos.
+En esta función, lo primero que se hace es comprobar los datos recibidos y crear una nota con ellos. A continuación, se comprueban los ficheros de la base de datos, y si todo es correcto, se parsea la nota y se añade a la base de datos.
+```typescript
+  private addNote(request: RequestMessage, callback: (response: ResponseMessage) => void) {
+    let note: Note;
+    if (request.user && request.title && request.body && request.color) {
+      note = new Note(request.user, request.title, request.body, request.color);
+    } else {
+      callback({
+        type: 'add',
+        success: false,
+        error: this.MISSING_PARAMETERS});
+      return;
+    }
+    if (!fs.existsSync(`${this.dbDir}/${request.user}`)) {
+      fs.mkdir(`${this.dbDir}/${request.user}`, (mkdirErr) => {
+        if (mkdirErr) {
+          callback({
+            type: 'add',
+            success: false,
+            error: mkdirErr.message});
+        } else {
+          fs.writeFile(`${this.dbDir}/${request.user}/${request.title}.json`, JSON.stringify(note), (writeErr) => {
+            if (writeErr) {
+              callback({
+                type: 'add',
+                success: false,
+                error: writeErr.message});
+            } else {
+              callback({
+                type: 'add',
+                success: true});
+            }
+          });
+        }
+      });
+    } else if (fs.existsSync(`${this.dbDir}/${request.user}/${request.title}.json`)) {
+      callback({
+        type: 'add',
+        success: false,
+        error: 'Note already exists'});
+    } else {
+      fs.writeFile(`${this.dbDir}/${request.user}/${request.title}.json`, JSON.stringify(note), (err) => {
+        if (err) {
+          callback({
+            type: 'add',
+            success: false,
+            error: 'Error adding note'});
+        } else {
+          callback({
+            type: 'add',
+            success: true});
+        }
+      });
+    }
+  }
+```
+- **updateNote**: actualiza una nota existente en la base de datos.
+Esta función es prácticamente un calco de la anterior con la diferencia de que el caso en el que se escribe la nota es el contrario al de añadir. En el primero, solo se añade en caso de que esta no exista, y en este, solo se actualiza en caso de que exista.
+```typescript
+  private updateNote(request: RequestMessage, callback: (response: ResponseMessage) => void) {
+    let note: Note;
+    if (request.user && request.title && request.body && request.color) {
+      note = new Note(request.user, request.title, request.body, request.color);
+    } else {
+      callback({
+        type: 'update',
+        success: false,
+        error: this.MISSING_PARAMETERS});
+      return;
+    }
+    if (!fs.existsSync(`${this.dbDir}/${request.user}`)) {
+      fs.mkdirSync(`${this.dbDir}/${request.user}`);
+    }
+    if (fs.existsSync(`${this.dbDir}/${request.user}/${request.title}.json`)) {
+      fs.writeFile(`${this.dbDir}/${request.user}/${request.title}.json`, JSON.stringify(note), (err) => {
+        if (err) {
+          callback({
+            type: 'update',
+            success: false,
+            error: 'Error updating note'});
+        } else {
+          callback({
+            type: 'update',
+            success: true,
+            notes: [note]});
+        }
+      });
+    } else {
+      callback({
+        type: 'update',
+        success: false,
+        error: this.NOTE_NOT_EXISTS});
+    }
+  }
+```
+- **removeNote**: elimina una nota existente en la base de datos.
+En este caso, primero se comprueba que exista el usuario, luego que exista la nota, y si todo es correcto, se elimina.
+```typescript
+  private removeNote(request: RequestMessage, callback: (response: ResponseMessage) => void) {
+    if (request.user && request.title) {
+      if (!fs.existsSync(`${this.dbDir}/${request.user}`)) {
+        callback({
+          type: 'remove',
+          success: false,
+          error: this.USER_NOT_EXISTS});
+      } else if (!fs.existsSync(`${this.dbDir}/${request.user}/${request.title}.json`)) {
+        callback({
+          type: 'remove',
+          success: false,
+          error: this.NOTE_NOT_EXISTS});
+      } else {
+        fs.unlink(`${this.dbDir}/${request.user}/${request.title}.json`, (err) => {
+          if (err) {
+            callback({
+              type: 'remove',
+              success: false,
+              error: 'Error removing note'});
+          } else {
+            callback({
+              type: 'remove',
+              success: true});
+          }
+        });
+      }
+    } else {
+      callback({
+        type: 'remove',
+        success: false,
+        error: this.MISSING_PARAMETERS});
+    }
+  }
+```
+- **readNote**: devuelve una nota existente en la base de datos.
+En esta función, comprobaremos que exista el fichero dentro del directorio del usuario, y si es así, lo leeremos, creamos una nota con los datos leídos, y devolvemos la nota.
+```typescript
+  private readNote(request: RequestMessage, callback: (response: ResponseMessage) => void) {
+    if (request.user && request.title) {
+      if (!fs.existsSync(`${this.dbDir}/${request.user}`)) {
+        callback({
+          type: 'read',
+          success: false,
+          error: this.USER_NOT_EXISTS});
+      } else if (!fs.existsSync(`${this.dbDir}/${request.user}/${request.title}.json`)) {
+        callback({
+          type: 'read',
+          success: false,
+          error: this.NOTE_NOT_EXISTS});
+      } else {
+        fs.readFile(`${this.dbDir}/${request.user}/${request.title}.json`, 'utf8', (err, data) => {
+          if (err) {
+            callback({
+              type: 'read',
+              success: false,
+              error: 'Error reading note'});
+          } else {
+            const json = JSON.parse(data);
+            const note = new Note(json.user as string,
+                                  json.title as string,
+                                  json.body as string,
+                                  json.color as Color);
+            callback({
+              type: 'read',
+              success: true,
+              notes: [note]});
+          }
+        });
+      }
+    } else {
+      callback({
+        type: 'read',
+        success: false,
+        error: this.MISSING_PARAMETERS});
+    }
+  }
+```
+- **listNotes**: devuelve una lista de todas las notas existentes en la base de datos.
+Por último, en este apartado, comprobamos que exista el usuario, y si es así, creamos una lista de notas, vamos leyendo todas las notas y añadiéndolas a la lista para devolverla en el mensaje de respuesta.
+```typescript
+  private listNotes(request: RequestMessage, callback: (response: ResponseMessage) => void) {
+    if (request.user) {
+      if (!fs.existsSync(`${this.dbDir}/${request.user}`)) {
+        callback({
+          type: 'list',
+          success: false,
+          error: this.USER_NOT_EXISTS});
+      } else {
+        const notes: Note[] = [];
+        fs.readdir(`${this.dbDir}/${request.user}`, (err, files) => {
+          if (err) {
+            callback({
+              type: 'list',
+              success: false,
+              error: 'Error listing notes'});
+          } else {
+            if (files.length <= 0) {
+              callback({
+                type: 'list',
+                success: true,
+                notes: []});
+            } else {
+              files.forEach((file) => {
+                fs.readFile(`${this.dbDir}/${request.user}/${file}`, 'utf8', (readErr, data) => {
+                  if (readErr) {
+                    callback({
+                      type: 'list',
+                      success: false,
+                      error: 'Error reading note'});
+                  } else {
+                    const json = JSON.parse(data);
+                    const note = new Note(json.user as string,
+                                          json.title as string,
+                                          json.body as string,
+                                          json.color as Color);
+                    notes.push(note);
+                    if (notes.length === files.length) {
+                      callback({
+                        type: 'list',
+                        success: true,
+                        notes: notes});
+                    }
+                  }
+                });
+              });
+            }
+          }
+        });
+      }
+    } else {
+      callback({
+        type: 'list',
+        success: false,
+        error: this.MISSING_PARAMETERS});
+    }
+  }
+```
+
+Por último, creamos una función para detener al servidor de forma explícita.
+```typescript
+  public stop() {
+    this.server.close();
+  }
+```
 ## Manejo de la línea de comandos
+El manejo de la línea de comandos para el lado del servidor es más simple que para el lado del cliente.
+
+Nos bastará con dos comandos, uno para inicializar directamente el servidor, y otro para inicializarlo con un timeout que cierre el servidor automáticamente.
+
+- **start**: inicializa el servidor.
+  - port: el puerto en el que se va a escuchar.
+```typescript
+    .command({
+      command: 'start',
+      describe: 'Start the server',
+      builder: {
+        port: {
+          describe: 'The port',
+          alias: 'p',
+          demandOption: false,
+          type: 'number',
+          default: 3000,
+        },
+      },
+      handler: (argv: any) => {
+        console.log(chalk.green.inverse('Server started (press Ctrl+C to stop)'));
+        new Server(argv.port);
+      },
+    })
+```
+- **timeout**: inicializa el servidor con un timeout que lo cierra automáticamente.
+  - timeout: el tiempo de espera antes de cerrar el servidor.
+  - port: el puerto en el que se va a escuchar.
+```typescript
+    .command({
+      command: 'timeout',
+      describe: 'Timeout for the server',
+      builder: {
+        timeout: {
+          describe: 'The timeout',
+          alias: 't',
+          demandOption: true,
+          type: 'number',
+        },
+        port: {
+          describe: 'The port',
+          alias: 'p',
+          demandOption: false,
+          type: 'number',
+          default: 3000,
+        },
+      },
+      handler: (argv: any) => {
+        console.log(chalk.yellow(`Server timeout set to ${argv.timeout}`));
+        console.log(chalk.green.inverse('Server started'));
+        const server = new Server(argv.port);
+        setTimeout(() => {
+          server.stop();
+          console.log(chalk.green.inverse('Server stopped'));
+        }, argv.timeout);
+      },
+    })
+```
 # Conclusiones
+Esta práctica ha sido realmente amplia en cuanto a la cantidad de diferentes temas que se han tratado. En primer lugar, el manejo de los ficheros ya los habíamos tratado en prácticas anteriores, pero el hecho de trabajarlos de forma asíncrona añaden una dificultad extra, y si a eso se le suma el uso de sockets para enviar y recibir datos, la complejidad vuelve a aumentar otro grado. Sin embargo, es una buena forma de trabajar con todos estos temas y poder implementarlos todos conjuntamente.
