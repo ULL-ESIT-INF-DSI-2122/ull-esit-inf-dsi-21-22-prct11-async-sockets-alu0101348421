@@ -337,6 +337,6 @@ Luego, para que imprimir la información de forma correcta, se utiliza el módul
 # Servidor
 Para la clase encargada del lado del servidor, tendremos en el constructor el directorio que trataremos como base de datos y el puerto sobre el que vamos a trabajar.
 
-Dentro de este constructor, primero comprobase
+Dentro de este constructor, primero se comprueba que exista el directorio que se indica, y en caso contrario, se crea.
 ## Manejo de la línea de comandos
 # Conclusiones
