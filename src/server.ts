@@ -12,7 +12,7 @@ export class Server {
   /**
    * Directorio de la base de datos.
    */
-  private dbDir: string;
+  private readonly dbDir: string;
   /**
    * Servidor de notas.
    */
