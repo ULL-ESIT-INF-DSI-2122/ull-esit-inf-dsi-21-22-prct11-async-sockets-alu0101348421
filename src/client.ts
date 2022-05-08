@@ -66,7 +66,7 @@ export class Client {
         }
       });
     } else {
-      console.log('No socket');
+      callback({type: 'unknown', success: false, error: 'No socket'});
     }
   }
 
