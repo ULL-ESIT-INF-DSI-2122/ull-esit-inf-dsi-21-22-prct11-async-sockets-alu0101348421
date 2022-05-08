@@ -30,8 +30,8 @@ export class Server {
   constructor(dbDir = './db', port = 3000) {
     if (!fs.existsSync(dbDir)) {
       const pwd = process.cwd();
-      fs.mkdirSync(`${pwd}/db`);
-      this.dbDir = `${pwd}/db`;
+      fs.mkdirSync(`${pwd}/${dbDir}`);
+      this.dbDir = `${pwd}/${dbDir}`;
     } else {
       this.dbDir = dbDir;
     }

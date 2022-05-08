@@ -10,7 +10,7 @@ export class Client {
   /**
    * Socket del cliente.
    */
-  private readonly socket: net.Socket;
+  private socket: net.Socket;
 
   UNKNOWN_RESPONSE = 'Unknown response';
 
