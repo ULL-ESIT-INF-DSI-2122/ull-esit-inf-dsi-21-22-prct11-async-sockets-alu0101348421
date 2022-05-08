@@ -12,18 +12,22 @@ export class Server {
   /**
    * Directorio de la base de datos.
    */
-  private dbDir: string;
+  private readonly dbDir: string;
   /**
    * Servidor de notas.
    */
-  private server: net.Server;
+  private readonly server: net.Server;
+
+  MISSING_PARAMETERS = 'Missing parameters';
+  NOTE_NOT_EXISTS = 'Note does not exist';
+  USER_NOT_EXISTS = 'User does not exist';
 
   /**
    * Constructor de la clase.
    * @param {string} dbDir Directorio de la base de datos.
    * @param {number} port Puerto del servidor.
    */
-  constructor(dbDir: string = './db', port: number = 3000) {
+  constructor(dbDir = './db', port = 3000) {
     this.dbDir = dbDir;
     this.server = net.createServer((socket) => {
       let msg = '';
@@ -112,7 +116,7 @@ export class Server {
       callback({
         type: 'add',
         success: false,
-        error: 'Missing parameters'});
+        error: this.MISSING_PARAMETERS});
       return;
     }
     if (!fs.existsSync(`${this.dbDir}/${request.user}`)) {
@@ -154,7 +158,7 @@ export class Server {
       callback({
         type: 'update',
         success: false,
-        error: 'Missing parameters'});
+        error: this.MISSING_PARAMETERS});
       return;
     }
     if (!fs.existsSync(`${this.dbDir}/${request.user}`)) {
@@ -178,7 +182,7 @@ export class Server {
       callback({
         type: 'update',
         success: false,
-        error: 'Note does not exist'});
+        error: this.NOTE_NOT_EXISTS});
     }
   }
 
@@ -194,12 +198,12 @@ export class Server {
         callback({
           type: 'remove',
           success: false,
-          error: 'User does not exist'});
+          error: this.USER_NOT_EXISTS});
       } else if (!fs.existsSync(`${this.dbDir}/${request.user}/${request.title}.json`)) {
         callback({
           type: 'remove',
           success: false,
-          error: 'Note does not exist'});
+          error: this.NOTE_NOT_EXISTS});
       } else {
         fs.unlink(`${this.dbDir}/${request.user}/${request.title}.json`, (err) => {
           if (err) {
@@ -218,7 +222,7 @@ export class Server {
       callback({
         type: 'remove',
         success: false,
-        error: 'Missing parameters'});
+        error: this.MISSING_PARAMETERS});
     }
   }
 
@@ -234,12 +238,12 @@ export class Server {
         callback({
           type: 'read',
           success: false,
-          error: 'User does not exist'});
+          error: this.USER_NOT_EXISTS});
       } else if (!fs.existsSync(`${this.dbDir}/${request.user}/${request.title}.json`)) {
         callback({
           type: 'read',
           success: false,
-          error: 'Note does not exist'});
+          error: this.NOTE_NOT_EXISTS});
       } else {
         fs.readFile(`${this.dbDir}/${request.user}/${request.title}.json`, 'utf8', (err, data) => {
           if (err) {
@@ -264,7 +268,7 @@ export class Server {
       callback({
         type: 'read',
         success: false,
-        error: 'Missing parameters'});
+        error: this.MISSING_PARAMETERS});
     }
   }
 
@@ -280,7 +284,7 @@ export class Server {
         callback({
           type: 'list',
           success: false,
-          error: 'User does not exist'});
+          error: this.USER_NOT_EXISTS});
       } else {
         const notes: Note[] = [];
         fs.readdir(`${this.dbDir}/${request.user}`, (err, files) => {
@@ -297,8 +301,8 @@ export class Server {
                 notes: []});
             } else {
               files.forEach((file) => {
-                fs.readFile(`${this.dbDir}/${request.user}/${file}`, 'utf8', (err, data) => {
-                  if (err) {
+                fs.readFile(`${this.dbDir}/${request.user}/${file}`, 'utf8', (readErr, data) => {
+                  if (readErr) {
                     callback({
                       type: 'list',
                       success: false,
@@ -327,7 +331,7 @@ export class Server {
       callback({
         type: 'list',
         success: false,
-        error: 'Missing parameters'});
+        error: this.MISSING_PARAMETERS});
     }
   }
 

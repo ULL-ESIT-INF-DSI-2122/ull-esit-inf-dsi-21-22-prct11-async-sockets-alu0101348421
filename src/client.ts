@@ -10,13 +10,15 @@ export class Client {
   /**
    * Socket del cliente.
    */
-  private socket: net.Socket;
+  private readonly socket: net.Socket;
+
+  UNKNOWN_RESPONSE = 'Unknown response';
 
   /**
    * Constructor de la clase.
    * @param {number} port Puerto del servidor.
    */
-  constructor(private port: number = 3000) {
+  constructor(private readonly port: number = 3000) {
     this.socket = net.createConnection(this.port);
   }
 
@@ -91,7 +93,7 @@ export class Client {
         } else if (response.type === 'add' && !response.success) {
           callback(new Error('Note not added'));
         } else {
-          callback(new Error('Unknown response'));
+          callback(new Error(this.UNKNOWN_RESPONSE));
         }
         this.socket.end();
       });
@@ -121,7 +123,7 @@ export class Client {
         } else if (response.type === 'update' && !response.success) {
           callback(new Error('Note not updated'));
         } else {
-          callback(new Error('Unknown response'));
+          callback(new Error(this.UNKNOWN_RESPONSE));
         }
         this.socket.end();
       });
@@ -150,7 +152,7 @@ export class Client {
         } else if (response.type === 'remove' && !response.success) {
           callback(new Error('Note not removed'));
         } else {
-          callback(new Error('Unknown response'));
+          callback(new Error(this.UNKNOWN_RESPONSE));
         }
         this.socket.end();
       });
@@ -182,7 +184,7 @@ export class Client {
         } else if (response.type === 'read' && !response.success) {
           callback(new Error('Note not read'), null);
         } else {
-          callback(new Error('Unknown response'), null);
+          callback(new Error(this.UNKNOWN_RESPONSE), null);
         }
         this.socket.end();
       });
@@ -218,7 +220,7 @@ export class Client {
         } else if (response.type === 'list' && !response.success) {
           callback(new Error('Unknown error'), []);
         } else {
-          callback(new Error('Unknown response'), []);
+          callback(new Error(this.UNKNOWN_RESPONSE), []);
         }
         this.socket.end();
       });
